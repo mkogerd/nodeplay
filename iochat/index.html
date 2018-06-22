@@ -1,0 +1,107 @@
+<html>
+<head>
+	<title>IO Chat</title>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	<script src="/socket.io/socket.io.js"></script>
+</head>
+<body>	
+	<h3> test </h3>
+	<div class="sidebar">
+		<h3>Online Users</h3>
+		<ul id="users"></ul>
+	</div>
+
+	<div id="chat" class="chatbox">
+		<form id="messageForm">
+			<label>Enter Message</label>
+			<textarea id="message"></textarea>
+			<input type="submit" value="Send Message">
+		</form>
+	</div>
+
+	<script>
+		$(function(){
+			// Message handling
+			var socket = io(); 
+			var $messageForm = $('#messageForm');
+			var $message = $('#message');
+			var $chat = $('#chat');
+
+			$messageForm.submit((e)=>{
+				e.preventDefault();
+				socket.emit('send message', $message.val());
+				$message.val('');
+			});
+		
+			socket.on('new message', (data)=>{
+				$chat.append('<div class="well">'+data.msg+'</div>');
+				$chat.append(player);
+			});
+			
+			//-------------------- Drawing handling -----------------------
+			var player = {};
+			var coords = {x: 50, y:60};
+			var speed = 5;
+			var tick = 100;
+			control = {
+				left: false,
+				up: false,
+				right: false,
+				down: false
+			};
+
+			
+			// Initialize player
+			socket.on('initialize', (data)=>{
+				alert('initializing '+data);
+				var entity = '<div class="player" id='+data+' style="position:relative;top:25;left:0;background-color:#FF0000;width:10px;height:10px;border:5px solid #333333; border-radius:50%;">';
+				$chat.append(entity);
+				$player = $('#'+data);
+			});
+
+			// Game tick
+			setInterval(()=>{
+				console.log('tick');
+					
+				// Move player entity
+				if(control.left) coords.x = coords.x - speed;
+				if(control.right) coords.x = coords.x + speed;
+				if(control.up) coords.y = coords.y - speed;
+				if(control.down) coords.y = coords.y + speed;
+
+				$player.css({top: coords.y, left: coords.x});
+				
+				// Clear inputs from this tick
+				for(let i in control) control[i] = false; console.log(coords);
+				
+			}, tick);
+			
+			$(window).keydown((e)=>{
+				var key = e.key;
+				switch(key) {
+					case 'ArrowLeft': // left
+					console.log('left');
+					control.left = true;
+					break;
+
+					case 'ArrowUp': // up
+					console.log('up');
+					control.up = true;
+					break;
+
+					case 'ArrowRight': // right
+					console.log('right');
+					control.right = true;
+        				break;
+
+        				case 'ArrowDown': // down
+					console.log('down');
+					control.down = true;
+        				break;
+				}
+				//e.preventDefault(); // prevent the default action (scroll / move caret)
+			});
+		});
+	</script>
+</body>
+</html>

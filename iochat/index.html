@@ -22,7 +22,9 @@
 	<script>
 		$(function(){
 			// Message handling
-			var socket = io(); 
+			socket = io(); 
+			console.log(socket);
+			socket.on('connect', () => {console.log(socket.id)});
 			var $messageForm = $('#messageForm');
 			var $message = $('#message');
 			var $chat = $('#chat');
@@ -50,30 +52,35 @@
 				down: false
 			};
 
-			
-			// Initialize player
+			// Initialize players
 			socket.on('initialize', (data)=>{
-				alert('initializing '+data);
-				var entity = '<div class="player" id='+data+' style="position:relative;top:25;left:0;background-color:#FF0000;width:10px;height:10px;border:5px solid #333333; border-radius:50%;">';
-				$chat.append(entity);
-				$player = $('#'+data);
+				for(player of data) {
+					console.log('initializing '+player.id);
+					var entity = '<div class="player" id='+player.id+' style="position:relative;top:25;left:0;background-color:#FF0000;width:10px;height:10px;border:5px solid #333333; border-radius:50%;">';
+					$chat.append(entity);
+					//$player = $('#'+player.id);
+				}
 			});
-
+			socket.on('new player', (player)=>{
+					var entity = '<div class="player" id='+player.id+' style="position:relative;top:25;left:0;background-color:#FF0000;width:10px;height:10px;border:5px solid #333333; border-radius:50%;">';
+					$chat.append(entity);
+			});
+			socket.on('update', (players)=>{
+				for(player of players) {
+					$('#'+player.id).css({top: player.y, left: player.x});
+				}
+				console.log('update received');
+			});	
+			socket.on('disconnect', (id)=>{
+				$('#'+id).remove();
+			});
+	
 			// Game tick
 			setInterval(()=>{
-				console.log('tick');
-					
-				// Move player entity
-				if(control.left) coords.x = coords.x - speed;
-				if(control.right) coords.x = coords.x + speed;
-				if(control.up) coords.y = coords.y - speed;
-				if(control.down) coords.y = coords.y + speed;
-
-				$player.css({top: coords.y, left: coords.x});
+				//console.log('tick');
 				
-				// Clear inputs from this tick
-				for(let i in control) control[i] = false; console.log(coords);
-				
+				// Send user control
+				socket.emit('input', control);
 			}, tick);
 			
 			$(window).keydown((e)=>{
@@ -99,7 +106,32 @@
 					control.down = true;
         				break;
 				}
-				//e.preventDefault(); // prevent the default action (scroll / move caret)
+			});
+
+			
+			$(window).keyup((e)=>{
+				var key = e.key;
+				switch(key) {
+					case 'ArrowLeft': // left
+					console.log('left up');
+					control.left = false;
+					break;
+
+					case 'ArrowUp': // up
+					console.log('up up');
+					control.up = false;
+					break;
+
+					case 'ArrowRight': // right
+					console.log('right up');
+					control.right = false;
+        				break;
+
+        				case 'ArrowDown': // down
+					console.log('down up');
+					control.down = false;
+        				break;
+				}
 			});
 		});
 	</script>
